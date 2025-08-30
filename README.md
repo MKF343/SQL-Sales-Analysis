@@ -34,15 +34,15 @@ This query calculates the total sales for each product line to identify the most
 
 SQL Code:
 
-SELECT
-    PRODUCTLINE,
-    SUM(SALES) AS TotalSales
-FROM
-    sales_data_sample
-GROUP BY
-    PRODUCTLINE
-ORDER BY
-    TotalSales DESC;
+    SELECT
+        PRODUCTLINE,
+        SUM(SALES) AS TotalSales
+    FROM
+        sales_data_sample
+    GROUP BY
+        PRODUCTLINE
+    ORDER BY
+        TotalSales DESC;
 
 Results:
 <img width="1473" height="804" alt="Screenshot 2025-08-30 102851" src="https://github.com/user-attachments/assets/39ccf062-310c-43dd-838b-5d59053017d7" />
@@ -55,15 +55,15 @@ This query identifies the top 5 customers based on their total spending to find 
 
 SQL Code:
 
-SELECT TOP 5
-    CUSTOMERNAME,
-    SUM(SALES) AS TotalSpent
-FROM
-    sales_data_sample
-GROUP BY
-    CUSTOMERNAME
-ORDER BY
-    TotalSpent DESC;
+    SELECT TOP 5
+        CUSTOMERNAME,
+        SUM(SALES) AS TotalSpent
+    FROM
+        sales_data_sample
+    GROUP BY
+        CUSTOMERNAME
+    ORDER BY
+        TotalSpent DESC;
 
 Results:
 <img width="1463" height="553" alt="Screenshot 2025-08-30 103529" src="https://github.com/user-attachments/assets/2efd2045-8564-4433-827f-d07d1e249f24" />
@@ -76,31 +76,31 @@ This query calculates the percentage growth in sales from one month to the next,
 
 SQL Code:
 
-WITH MonthlySales AS (
+    WITH MonthlySales AS (
+        SELECT
+            FORMAT(CONVERT(DATE, ORDERDATE, 101), 'yyyy-MM') AS SalesMonth,
+            SUM(SALES) AS CurrentMonthSales
+        FROM
+            sales_data_sample
+        WHERE
+            STATUS = 'Shipped'
+        GROUP BY
+            FORMAT(CONVERT(DATE, ORDERDATE, 101), 'yyyy-MM')
+    )
     SELECT
-        FORMAT(CONVERT(DATE, ORDERDATE, 101), 'yyyy-MM') AS SalesMonth,
-        SUM(SALES) AS CurrentMonthSales
+        SalesMonth,
+        CurrentMonthSales,
+        LAG(CurrentMonthSales, 1, 0) OVER (ORDER BY SalesMonth) AS PreviousMonthSales,
+        CAST(
+            ROUND(
+                (CurrentMonthSales - LAG(CurrentMonthSales, 1, 0) OVER (ORDER BY SalesMonth)) * 100.0 /
+                NULLIF(LAG(CurrentMonthSales, 1, 0) OVER (ORDER BY SalesMonth), 0), 2
+            ) AS VARCHAR(50)
+        ) + '%' AS MoM_Growth
     FROM
-        sales_data_sample
-    WHERE
-        STATUS = 'Shipped'
-    GROUP BY
-        FORMAT(CONVERT(DATE, ORDERDATE, 101), 'yyyy-MM')
-)
-SELECT
-    SalesMonth,
-    CurrentMonthSales,
-    LAG(CurrentMonthSales, 1, 0) OVER (ORDER BY SalesMonth) AS PreviousMonthSales,
-    CAST(
-        ROUND(
-            (CurrentMonthSales - LAG(CurrentMonthSales, 1, 0) OVER (ORDER BY SalesMonth)) * 100.0 /
-            NULLIF(LAG(CurrentMonthSales, 1, 0) OVER (ORDER BY SalesMonth), 0), 2
-        ) AS VARCHAR(50)
-    ) + '%' AS MoM_Growth
-FROM
-    MonthlySales
-ORDER BY
-    SalesMonth;
+        MonthlySales
+    ORDER BY
+        SalesMonth;
 
 Results:
 <img width="977" height="690" alt="Screenshot 2025-08-30 103927" src="https://github.com/user-attachments/assets/e74411f5-ffd4-4c22-b93f-82c9bc57a5ab" />
